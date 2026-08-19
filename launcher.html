@@ -10,8 +10,15 @@
 </style>
 </head>
 <body>
-<h2>Tocá el botón para abrir el PoC dentro de inDrive</h2>
-<p>Esto va a intentar abrir la app de inDrive directamente.</p>
-<a class="btn" href="indrive://webdialog?url=https%3A%2F%2Fjuanestebanmunoz2009-pixel.github.io%2Findrivepoc%2Fpoc.html">ABRIR EN INDRIVE</a>
+<h2>Diagnóstico: ¿sigue vivo el deep link?</h2>
+<p>Tocá cada botón UNO POR UNO (con un toque real). Anotá cuál efectivamente cambia a la app de inDrive (branding/UI de inDrive, aparece en el task-switcher como inDrive) y cuál se queda en el navegador.</p>
+
+<a class="btn" href="indrive://webdialog?url=https%3A%2F%2Fjuanestebanmunoz2009-pixel.github.io%2Findrivepoc%2Fpoc.html">A. webdialog + nuestro PoC (el original)</a>
+
+<a class="btn" href="indrive://webdialog?url=https%3A%2F%2Findrive.com">B. webdialog + indrive.com (control: dominio legítimo)</a>
+
+<a class="btn" href="indrive://websheet?url=https%3A%2F%2Fjuanestebanmunoz2009-pixel.github.io%2Findrivepoc%2Fpoc.html">C. websheet + nuestro PoC (host alternativo)</a>
+
+<a class="btn" href="indrive://webdialog?url=https%3A%2F%2Fppw.euce1.indriverapp.com%2F">D. webdialog + host inDrive real ya confirmado antes</a>
 </body>
 </html>
