@@ -21,6 +21,15 @@
 <button class="stage2" onclick="testLogout()">2. LOGOUT forzado (te desloguea, reversible)</button>
 <button class="stage3" onclick="testRefreshJwt()">3. REFRESH_JWT (sensible - lee el resultado abajo, NO lo compartas)</button>
 
+<hr>
+<p>Acciones nuevas a probar (todas encontradas en el mismo dispatcher <code>postMessage</code>, nunca antes disparadas en vivo):</p>
+<button class="stage2" onclick="testPaymentSuccess()">4. PAYMENT_SUCCESS (spoof UI de pago exitoso)</button>
+<button class="stage2" onclick="testPaymentFailed()">5. PAYMENT_FAILED (spoof UI de pago fallido)</button>
+<button class="stage2" onclick="testPaymentInProgress()">6. PAYMENT_IN_PROGRESS (spoof UI de pago en curso)</button>
+<button class="stage3" onclick="testRequestTopUp()">7. REQUEST_TOP_UP (¿abre flujo real de recarga?)</button>
+<button class="stage3" onclick="testGetTopupPayload()">8. GET_TOPUP_PAYLOAD (¿filtra datos de recarga?)</button>
+<button class="stage1" onclick="testGoBack()">9. GO_BACK (navegación, bajo riesgo)</button>
+
 <div id="log">Esperando...\n</div>
 
 <script>
@@ -66,6 +75,30 @@ function testLogout() {
 
 function testRefreshJwt() {
   send("refresh_jwt", { old_jwt: "poc-test-value-not-a-real-token" });
+}
+
+function testPaymentSuccess() {
+  send("payment_success", { orderId: "poc-test-order", amount: 0 });
+}
+
+function testPaymentFailed() {
+  send("payment_failed", { orderId: "poc-test-order", reason: "poc test" });
+}
+
+function testPaymentInProgress() {
+  send("payment_in_progress", { orderId: "poc-test-order" });
+}
+
+function testRequestTopUp() {
+  send("request_top_up", { amount: 0 });
+}
+
+function testGetTopupPayload() {
+  send("get_topup_payload", {});
+}
+
+function testGoBack() {
+  send("go_back", {});
 }
 
 log("Página cargada. Host: " + location.href);
