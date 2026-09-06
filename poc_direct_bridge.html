@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>inDrive bridge direct-method tester</title>
+<style>
+  body { font-family: sans-serif; padding: 16px; background: #111; color: #eee; }
+  button { display: block; width: 100%; padding: 14px; margin: 10px 0; font-size: 16px; }
+  #log { white-space: pre-wrap; background: #222; padding: 10px; margin-top: 20px; font-family: monospace; font-size: 13px; }
+  .marker { color: #6cf; }
+</style>
+</head>
+<body>
+<h3>Direct WebViewJavaScriptApi tester (no postMessage)</h3>
+<p>Bridge object: <span id="bridgeStatus">checking...</span></p>
+
+<button onclick="testCopy()">1. copyToClipboard()</button>
+<button onclick="testShare()">2. openShareMenu()</button>
+<button onclick="testGoBack()">3. goBackToMain()</button>
+
+<div id="log">log:\n</div>
+
+<script>
+const MARKER = "INDRIVE_BRIDGE_TEST_" + Math.random().toString(36).slice(2,8).toUpperCase();
+const logEl = document.getElementById('log');
+function log(msg) { logEl.textContent += msg + "\n"; }
+
+window.onload = function() {
+  document.getElementById('bridgeStatus').textContent = (typeof window.Android !== 'undefined') ? 'window.Android PRESENT' : 'window.Android MISSING';
+  log("marker string for this session: " + MARKER);
+};
+
+function testCopy() {
+  try {
+    window.Android.copyToClipboard(MARKER);
+    log("[copyToClipboard] called with marker: " + MARKER + " -- now go paste in any app (e.g. Notes) and check if it matches");
+  } catch (e) {
+    log("[copyToClipboard] threw: " + e);
+  }
+}
+
+function testShare() {
+  try {
+    window.Android.openShareMenu("SHARE_TEST " + MARKER + " https://example.com");
+    log("[openShareMenu] called -- check if native Android share sheet opened with this text pre-filled");
+  } catch (e) {
+    log("[openShareMenu] threw: " + e);
+  }
+}
+
+function testGoBack() {
+  try {
+    window.Android.goBackToMain();
+    log("[goBackToMain] called -- check if the WebDialog closed / navigated back");
+  } catch (e) {
+    log("[goBackToMain] threw: " + e);
+  }
+}
+</script>
+</body>
+</html>
