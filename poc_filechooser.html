@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>inDrive filechooser/camera tester</title>
+<style>
+  body { font-family: sans-serif; padding: 16px; background: #111; color: #eee; }
+  button { display: block; width: 100%; padding: 14px; margin: 10px 0; font-size: 16px; }
+  #log { white-space: pre-wrap; background: #222; padding: 10px; margin-top: 20px; font-family: monospace; font-size: 13px; }
+  .warn { color: #f66; font-weight: bold; }
+</style>
+</head>
+<body>
+<h3>File chooser / camera bridge tester</h3>
+<p class="warn">WARNING: if a real camera/document capture screen opens, do NOT complete a real capture/upload — just confirm it opened, then cancel/back out.</p>
+<p>Bridge object: <span id="bridgeStatus">checking...</span></p>
+
+<button onclick="testImageChooser()">1. openImageChooser()</button>
+<button onclick="testCustomChooser()">2. openCustomChooser()</button>
+<button onclick="testCamera()">3. openCamera() -- CAUTION</button>
+
+<div id="log">log:\n</div>
+
+<script>
+const logEl = document.getElementById('log');
+function log(msg) { logEl.textContent += msg + "\n"; }
+
+window.onload = function() {
+  document.getElementById('bridgeStatus').textContent = (typeof window.Android !== 'undefined') ? 'window.Android PRESENT' : 'window.Android MISSING';
+};
+
+function testImageChooser() {
+  try {
+    window.Android.openImageChooser("bridge_test_chooser");
+    log("[openImageChooser] called -- did a gallery/image picker bottom sheet open?");
+  } catch (e) {
+    log("[openImageChooser] threw: " + e);
+  }
+}
+
+function testCustomChooser() {
+  try {
+    window.Android.openCustomChooser(JSON.stringify({}));
+    log("[openCustomChooser] called with {} -- did a chooser UI open? (may need different JSON shape if nothing happens)");
+  } catch (e) {
+    log("[openCustomChooser] threw: " + e);
+  }
+}
+
+function testCamera() {
+  try {
+    const payload = JSON.stringify({ pictures: [ { id: "bridge_test_1", mask: "bridge_test_mask" } ] });
+    window.Android.openCamera(payload);
+    log("[openCamera] called -- did a camera/document-capture screen open? DO NOT complete a real capture, just confirm and back out.");
+  } catch (e) {
+    log("[openCamera] threw: " + e);
+  }
+}
+</script>
+</body>
+</html>
