@@ -221,7 +221,7 @@ function send(action, data) {
 }
 
 function probeBridge() {
-  if (!bridge && !detectBridge()) return;
+  if (!bridge) return;
   try {
     if (bridge.getAppVersion) log("getAppVersion: " + bridge.getAppVersion());
     if (bridge.getDeviceModel) log("getDeviceModel: " + bridge.getDeviceModel());
